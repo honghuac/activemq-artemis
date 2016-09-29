@@ -239,7 +239,7 @@ public class JMSTopicControlImpl extends StandardMBean implements TopicControl {
          throw new IllegalArgumentException("No subscriptions with name " + queueName + " for clientID " + clientID);
       }
       ActiveMQServerControl serverControl = (ActiveMQServerControl) managementService.getResource(ResourceNames.CORE_SERVER);
-      serverControl.destroyQueue(queueName);
+      serverControl.destroyQueue(queueName, true);
    }
 
    @Override
