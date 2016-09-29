@@ -51,6 +51,7 @@ import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
 import org.apache.qpid.proton.amqp.transport.AmqpError;
+import org.apache.qpid.proton.amqp.transport.ConnectionError;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.engine.Delivery;
 import org.apache.qpid.proton.engine.Link;
@@ -473,7 +474,11 @@ public class AMQPSessionCallback implements SessionCallback {
    @Override
    public void disconnect(ServerConsumer consumer, String queueName) {
       synchronized (connection.getLock()) {
-         ((Link) consumer.getProtocolContext()).close();
+         try {
+            ((ProtonServerSenderContext) consumer.getProtocolContext()).close(new ErrorCondition(ConnectionError.CONNECTION_FORCED, "Disconnected requested by server"));
+         } catch (ActiveMQAMQPException e) {
+             // Ignore
+         }
          connection.flush();
       }
    }
