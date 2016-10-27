@@ -69,6 +69,7 @@ import org.apache.activemq.artemis.core.server.ActiveMQServer;
 import org.apache.activemq.artemis.core.server.Queue;
 import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
+import org.apache.activemq.artemis.protocol.amqp.client.AMQPClientConnectionFactoryImpl;
 import org.apache.activemq.artemis.protocol.amqp.client.ProtonClientConnectionLifeCycleListener;
 import org.apache.activemq.artemis.protocol.amqp.client.ProtonClientProtocolManager;
 import org.apache.activemq.artemis.protocol.amqp.broker.ProtonProtocolManagerFactory;
@@ -975,7 +976,7 @@ public class ProtonTest extends ProtonTestBase {
       final Map<String, Object> config = new LinkedHashMap<>();
       config.put(TransportConstants.HOST_PROP_NAME, "localhost");
       config.put(TransportConstants.PORT_PROP_NAME, "5673");
-      ProtonClientConnectionLifeCycleListener lifeCycleListener = new ProtonClientConnectionLifeCycleListener(server, 5000);
+      ProtonClientConnectionLifeCycleListener lifeCycleListener = new ProtonClientConnectionLifeCycleListener(new AMQPClientConnectionFactoryImpl(server, 5000));
       ProtonClientProtocolManager protocolManager = new ProtonClientProtocolManager(new ProtonProtocolManagerFactory(), server);
       NettyConnector connector = new NettyConnector(config, lifeCycleListener, lifeCycleListener, server.getExecutorFactory().getExecutor(), server.getExecutorFactory().getExecutor(), server.getScheduledPool(), protocolManager);
       connector.start();

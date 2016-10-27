@@ -33,6 +33,7 @@ import org.apache.activemq.artemis.jms.client.ActiveMQDestination;
 import org.apache.activemq.artemis.protocol.amqp.converter.ProtonMessageConverter;
 import org.apache.activemq.artemis.protocol.amqp.proton.AMQPConnectionContext;
 import org.apache.activemq.artemis.protocol.amqp.proton.AMQPConstants;
+import org.apache.activemq.artemis.protocol.amqp.proton.BaseEventHandler;
 import org.apache.activemq.artemis.spi.core.protocol.ConnectionEntry;
 import org.apache.activemq.artemis.spi.core.protocol.MessageConverter;
 import org.apache.activemq.artemis.spi.core.protocol.ProtocolManager;
@@ -109,6 +110,8 @@ public class ProtonProtocolManager implements ProtocolManager<Interceptor>, Noti
 
       String id = server.getConfiguration().getName();
       AMQPConnectionContext amqpConnection = new AMQPConnectionContext(connectionCallback, id, (int) ttl, getMaxFrameSize(), AMQPConstants.Connection.DEFAULT_CHANNEL_MAX, server.getExecutorFactory().getExecutor(), server.getScheduledPool());
+      BaseEventHandler eventHandler = new BaseEventHandler(amqpConnection);
+      amqpConnection.addEventHandler(eventHandler);
 
       Executor executor = server.getExecutorFactory().getExecutor();
 
