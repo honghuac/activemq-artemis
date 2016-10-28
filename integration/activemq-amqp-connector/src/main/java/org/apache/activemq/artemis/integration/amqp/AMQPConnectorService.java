@@ -22,7 +22,8 @@ import org.apache.activemq.artemis.core.remoting.impl.netty.TransportConstants;
 import org.apache.activemq.artemis.core.server.ActiveMQComponent;
 import org.apache.activemq.artemis.core.server.ActiveMQServer;
 import org.apache.activemq.artemis.core.server.ConnectorService;
-import org.apache.activemq.artemis.protocol.amqp.client.ProtonClientConnectionLifeCycleListener;
+import org.apache.activemq.artemis.protocol.amqp.client.AMQPClientConnectionFactory;
+import org.apache.activemq.artemis.protocol.amqp.client.ProtonClientConnectionManager;
 import org.apache.activemq.artemis.protocol.amqp.client.ProtonClientProtocolManager;
 import org.apache.activemq.artemis.protocol.amqp.broker.ProtonProtocolManager;
 import org.apache.activemq.artemis.protocol.amqp.broker.ProtonProtocolManagerFactory;
@@ -32,6 +33,7 @@ import org.apache.activemq.artemis.spi.core.remoting.Connection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -50,16 +52,17 @@ public class AMQPConnectorService implements ConnectorService, BaseConnectionLif
    private final Executor closeExecutor = Executors.newSingleThreadExecutor();
    private final Executor threadPool = Executors.newFixedThreadPool(4);
    private final ScheduledExecutorService scheduledExecutorService;
-   private final ProtonClientConnectionLifeCycleListener lifecycleHandler;
+   private final ProtonClientConnectionManager lifecycleHandler;
    private volatile boolean started = false;
 
-   public AMQPConnectorService(String connectorName, String host, int port, ActiveMQServer server, ScheduledExecutorService scheduledExecutorService) {
+   public AMQPConnectorService(String connectorName, String host, int port, String containerId, Optional<SubscriberInfo> subscriberInfo, ActiveMQServer server, ScheduledExecutorService scheduledExecutorService) {
       this.name = connectorName;
       this.host = host;
       this.port = port;
       this.server = server;
       this.scheduledExecutorService = scheduledExecutorService;
-      this.lifecycleHandler = new ProtonClientConnectionLifeCycleListener(server, 5000);
+      AMQPClientConnectionFactory factory = new AMQPClientConnectionFactory(server, containerId, 5000);
+      this.lifecycleHandler = new ProtonClientConnectionManager(factory, subscriberInfo.map(LinkInitiator::new));
    }
 
    @Override
