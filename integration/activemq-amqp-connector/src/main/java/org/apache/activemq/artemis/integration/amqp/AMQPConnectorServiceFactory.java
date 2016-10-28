@@ -24,6 +24,7 @@ import org.apache.activemq.artemis.core.server.ConnectorServiceFactory;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -31,32 +32,50 @@ import java.util.concurrent.ScheduledExecutorService;
  * TODO: Description
  */
 public class AMQPConnectorServiceFactory implements ConnectorServiceFactory {
-   private static final String ROUTER_HOST = "host";
-   private static final String ROUTER_PORT = "port";
-   private static final Set<String> properties = initializeProperties();
+   private static final String HOST = "host";
+   private static final String PORT = "port";
+   private static final String CONTAINER = "containerId";
+   private static final String SOURCE_ADDRESS = "sourceAddress";
+   private static final String CLIENT_ADDRESS = "clientAddress";
 
-   private static Set<String> initializeProperties() {
+   private static final Set<String> requiredProperties = initializeRequiredProperties();
+   private static final Set<String> allowedProperties = initializeAllowedProperties();
+
+   private static Set<String> initializeAllowedProperties() {
+      Set<String> properties = initializeRequiredProperties();
+      properties.add(CLIENT_ADDRESS);
+      properties.add(SOURCE_ADDRESS);
+      return properties;
+   }
+
+   private static Set<String> initializeRequiredProperties() {
       Set<String> properties = new LinkedHashSet<>();
-      properties.add(ROUTER_HOST);
-      properties.add(ROUTER_PORT);
+      properties.add(HOST);
+      properties.add(PORT);
+      properties.add(CONTAINER);
       return properties;
    }
 
    @Override
    public ConnectorService createConnectorService(String connectorName, Map<String, Object> configuration, StorageManager storageManager, PostOffice postOffice, ScheduledExecutorService scheduledExecutorService) {
-      String host = (String) configuration.get(ROUTER_HOST);
-      int port = Integer.parseInt((String) configuration.get(ROUTER_PORT));
+      String host = (String) configuration.get(HOST);
+      int port = Integer.parseInt((String) configuration.get(PORT));
+      String container = (String)configuration.get(CONTAINER);
+      Optional<String> sourceAddress = Optional.ofNullable((String)configuration.get(SOURCE_ADDRESS));
+      Optional<String> clientAddress = Optional.ofNullable((String)configuration.get(CLIENT_ADDRESS));
+      Optional<SubscriberInfo> info = sourceAddress.flatMap(s -> clientAddress.map(c -> new SubscriberInfo(container, s, c)));
+
       ActiveMQAMQPLogger.LOGGER.infof("Creating connector host %s port %d", host, port);
-      return new AMQPConnectorService(connectorName, host, port, ((PostOfficeImpl)postOffice).getServer(), scheduledExecutorService);
+      return new AMQPConnectorService(connectorName, host, port, container, info, ((PostOfficeImpl)postOffice).getServer(), scheduledExecutorService);
    }
 
    @Override
    public Set<String> getAllowableProperties() {
-      return properties;
+      return allowedProperties;
    }
 
    @Override
    public Set<String> getRequiredProperties() {
-      return properties;
+      return requiredProperties;
    }
 }
