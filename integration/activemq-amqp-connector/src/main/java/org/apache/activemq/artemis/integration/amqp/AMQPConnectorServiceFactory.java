@@ -35,6 +35,7 @@ public class AMQPConnectorServiceFactory implements ConnectorServiceFactory {
    private static final String HOST = "host";
    private static final String PORT = "port";
    private static final String CONTAINER = "containerId";
+   private static final String GROUP = "groupId";
    private static final String SOURCE_ADDRESS = "sourceAddress";
    private static final String CLIENT_ADDRESS = "clientAddress";
 
@@ -45,6 +46,7 @@ public class AMQPConnectorServiceFactory implements ConnectorServiceFactory {
       Set<String> properties = initializeRequiredProperties();
       properties.add(CLIENT_ADDRESS);
       properties.add(SOURCE_ADDRESS);
+      properties.add(CONTAINER);
       return properties;
    }
 
@@ -52,7 +54,7 @@ public class AMQPConnectorServiceFactory implements ConnectorServiceFactory {
       Set<String> properties = new LinkedHashSet<>();
       properties.add(HOST);
       properties.add(PORT);
-      properties.add(CONTAINER);
+      properties.add(GROUP);
       return properties;
    }
 
@@ -60,13 +62,22 @@ public class AMQPConnectorServiceFactory implements ConnectorServiceFactory {
    public ConnectorService createConnectorService(String connectorName, Map<String, Object> configuration, StorageManager storageManager, PostOffice postOffice, ScheduledExecutorService scheduledExecutorService) {
       String host = (String) configuration.get(HOST);
       int port = Integer.parseInt((String) configuration.get(PORT));
-      String container = (String)configuration.get(CONTAINER);
+      String group = (String)configuration.get(GROUP);
+
       Optional<String> sourceAddress = Optional.ofNullable((String)configuration.get(SOURCE_ADDRESS));
       Optional<String> clientAddress = Optional.ofNullable((String)configuration.get(CLIENT_ADDRESS));
-      Optional<SubscriberInfo> info = sourceAddress.flatMap(s -> clientAddress.map(c -> new SubscriberInfo(container, s, c)));
+      Optional<String> container = Optional.ofNullable((String)configuration.get(CONTAINER));
+
+      Optional<SubscriberInfo> info = sourceAddress.flatMap(s ->
+              clientAddress.flatMap(c ->
+                      container.map(o -> new SubscriberInfo(o, s, c))));
 
       ActiveMQAMQPLogger.LOGGER.infof("Creating connector host %s port %d", host, port);
-      return new AMQPConnectorService(connectorName, host, port, container, info, ((PostOfficeImpl)postOffice).getServer(), scheduledExecutorService);
+      String containerId = group;
+      if (container.isPresent()) {
+         containerId = container.get();
+      }
+      return new AMQPConnectorService(connectorName, host, port, containerId, group, info, ((PostOfficeImpl)postOffice).getServer(), scheduledExecutorService);
    }
 
    @Override
